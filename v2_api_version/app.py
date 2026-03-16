@@ -42,7 +42,7 @@ from core.intent import detect_intent
 from core.prompt import build_prompt, format_context
 
 # ── Flask app ─────────────────────────────────────────────────────────────────
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', static_folder='.')
 CORS(app)  # Allow cross-origin requests from the HTML frontend
 
 # ── Load pipeline ONCE at startup (global — avoids reloading per request) ─────
@@ -273,6 +273,11 @@ def post_process_answer(answer: str) -> str:
 def index():
     """Serve index.html from the project root."""
     return send_file("index.html")
+
+@app.route("/bg.webp")
+def serve_bg():
+    """Serve the background image."""
+    return send_file("bg.webp")
 
 
 # ── POST /ask — full RAG pipeline ─────────────────────────────────────────────
