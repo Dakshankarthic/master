@@ -1,206 +1,133 @@
-# AI-Powered Course Assistant — MastersUnion
+# Masters' Union AI Chatbot — Hackathon Submission
 
-> Hackathon submission: AI Course Assistant for Program Discovery and Query Resolution
-
-An intelligent chatbot that answers prospective student queries about MastersUnion programmes using **Retrieval-Augmented Generation (RAG)**. All answers are grounded in official programme data. Zero hallucination by design.
+This repository contains two distinct implementation strategies for the Masters' Union AI Admissions Assistant. Both use **Retrieval-Augmented Generation (RAG)** to provide accurate, grounded answers about 28+ programmes.
 
 ---
 
-## Quick Start (3 commands)
+## 🚀 Development Approaches
 
+### Approach 1: Production-Ready (Cloud API) — **RECOMMENDED**
+*   **Location**: `./v2_api_version`
+*   **LLM**: Groq LLaMA 3.1 8B (Primary) / OpenAI GPT-4o-mini (Fallback)
+*   **Performance**: Sub-second latency, advanced reasoning, and structured tree-format responses.
+*   **Best for**: Production environments and high-traffic scenarios.
+
+### Approach 2: Privacy-First (Local LLM)
+*   **Location**: `./v1_local_version`
+*   **LLM**: Llama 3.2 (3B) / Llama 3 (8B) via **Ollama**
+*   **Performance**: Works 100% offline, zero API costs, full data privacy.
+*   **Best for**: Secure internal tools or development without cloud dependencies.
+
+---
+
+## Features (Approach 1 - API Focused)
+
+- **Hybrid retrieval**: FAISS (MMR semantic search) + BM25 keyword search
+- **13 intent categories**: Fees, Curriculum, Admissions, Career, Placement, Immersion, Overview, Faculty, Recommendation, Greeting, Thanks, Farewell, General
+- **28 programmes covered**: UG, PGP, Executive, Family Business, and Immersion programmes
+- **Structured responses**: Tree-format comparisons, ALL CAPS section headers, fee highlights
+- **Small-talk handling**: Greetings, farewells, and identity questions bypass RAG
+- **Out-of-scope filter**: Rejects irrelevant queries (cricket, weather, jokes, etc.)
+- **Programme catalogue fallback**: Hardcoded programme list injected for course-list queries
+- **Multi-LLM support**: Groq LLaMA (primary) → OpenAI GPT-4o-mini → Local Ollama (Qwen)
+
+## Quick Start (Approach 1 — API)
+
+### 1. Install dependencies
 ```bash
-# 1. Install dependencies
+cd v2_api_version
 pip install -r requirements.txt
+```
 
-# 2. Set your Grok API key
-cp .env.example .env
-# Edit .env → add XAI_API_KEY=your_key_here
-# Get key at: https://console.x.ai/
+### 2. Set environment variables
+```bash
+# Set your API keys
+export GROQ_API_KEY=your_key_here
+export OPENAI_API_KEY=your_key_here
+```
 
-# 3. Scrape data + build index + launch
-python src/scraper.py
-python src/build_index.py
-streamlit run app.py
-# Open http://localhost:8501
+### 3. Start the server
+```bash
+python app.py
 ```
 
 ---
 
-## System Architecture
+## Quick Start (Approach 2 — Local)
 
+### 1. Install dependencies
+```bash
+cd v1_local_version
+pip install -r requirements.txt
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      USER QUERY                          │
-└─────────────────────┬───────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────┐
-│  STEP 5 — Category Detection  (rag_engine.py)            │
-│  Keyword scoring → Fees / Curriculum / Admissions / …   │
-└─────────────────────┬───────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────┐
-│  STEP 6 — Retrieval  (rag_engine.py)                     │
-│  Embed query → FAISS similarity search → Top 4 chunks   │
-└─────────────────────┬───────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────┐
-│  STEP 7 — Generation  (rag_engine.py)                    │
-│  System prompt + chunks + query → Grok API → Answer     │
-│  Model: grok-3-mini via api.x.ai/v1 (OpenAI-compatible) │
-└─────────────────────┬───────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────┐
-│  STEP 8 — Chat UI  (app.py)                              │
-│  Streamlit: answer + category badge + source citations  │
-└─────────────────────────────────────────────────────────┘
 
-DATA PIPELINE (one-time setup)
-═══════════════════════════════
-Raw Sources (mastersunion.org — 17 courses × 5 tabs ≈ 85 pages)
-  │
-  ▼  src/scraper.py  (Step 1)
-data/raw/*_full.txt   ← clean text, one file per course
-  │
-  ▼  src/build_index.py  (Steps 2-4)
-  │  Chunk (400 words, 60 overlap)
-  │  Embed (sentence-transformers/all-MiniLM-L6-v2)
-  │  Index (FAISS flat L2)
-  │
-  ▼
-data/processed/faiss_index/   ← loaded at runtime in milliseconds
+### 2. Start Ollama
+```bash
+ollama pull llama3.2
+```
+
+### 3. Start Application
+```bash
+python app.py
 ```
 
 ---
 
-## File Structure
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Web server | Flask + flask-cors |
+| Embeddings | sentence-transformers/all-MiniLM-L6-v2 |
+| Vector store | FAISS (langchain-community) |
+| Keyword search | BM25Okapi (rank-bm25) |
+| Primary LLM | Groq llama-3.1-8b-instant |
+| Fallback LLM | OpenAI gpt-4o-mini |
+| Local LLM | Llama 3.2 via Ollama |
+| PDF extraction | pdfplumber |
+| Web Scraping | BeautifulSoup4 + Playwright fallback |
+| Frontend | Tailwind CSS + Vanilla JS |
+
+## Project Structure
 
 ```
 hackathon_final/
-├── app.py                    # Streamlit chat UI  (Step 8)
-├── src/
-│   ├── scraper.py            # Web scraper        (Step 1)
-│   ├── build_index.py        # Index builder      (Steps 2-3-4)
-│   └── rag_engine.py         # RAG core           (Steps 5-6-7)
-├── data/
-│   ├── raw/                  # Scraped text files (auto-created)
-│   └── processed/            # FAISS index        (auto-created)
-├── requirements.txt
-├── .env.example
-├── README.md
-└── HACKATHON_DOCS.md
+├── v1_local_version/         # Approach 1: Local RAG (Ollama)
+│   ├── app.py
+│   ├── index.html
+│   ├── src/
+│   └── data/
+├── v2_api_version/           # Approach 2: Cloud RAG (Groq/OpenAI)
+│   ├── app.py
+│   ├── index.html
+│   ├── core/
+│   └── scripts/
+└── README.md                 # Unified Documentation
+```
+
+## API Reference (v2)
+
+### POST /ask
+Request body:
+```json
+{
+  "query": "What is the fee for PGP TBM?",
+  "history": []
+}
+```
+
+Response:
+```json
+{
+  "answer": "FEES:
+PGP TBM
+├─ Total Fee: ₹22,65,000
+└─ Duration: 11 months",
+  "category": "Fees",
+  "model": "llama-3.1-8b-instant"
+}
 ```
 
 ---
 
-## Technology Stack
-
-| Component | Technology | Why |
-|---|---|---|
-| Web scraping | requests + BeautifulSoup | Simple, no browser needed, handles MastersUnion |
-| Embeddings | sentence-transformers/all-MiniLM-L6-v2 | Free, fast on CPU, 384-dim, excellent semantic similarity |
-| Vector store | FAISS (faiss-cpu) | Local, no server, millisecond search, battle-tested at Meta |
-| RAG framework | LangChain | Industry standard, minimal boilerplate |
-| LLM | Grok (grok-3-mini) via xAI API | OpenAI-compatible, fast, cheap, good instruction following |
-| Chat UI | Streamlit | Chat UI in 20 lines of Python, perfect for demos |
-| Config | python-dotenv | Safe API key management |
-
-**Total API cost for hackathon demo:** < ₹50 in Grok calls. Everything else is free.
-
----
-
-## Why RAG?
-
-| Approach | Accuracy | Build time | Hallucination | Our choice |
-|---|---|---|---|---|
-| Prompt stuffing (paste all data) | Low | 0 min | High | ✗ |
-| Fine-tuning LLM | High | Days | Low | ✗ |
-| Ask ChatGPT directly | Low | 0 min | High | ✗ |
-| **RAG (our approach)** | **High** | **~30 min** | **None** | **✓** |
-
-RAG wins because:
-1. Every answer is grounded in retrieved source text — hallucination is impossible by design
-2. The index updates in minutes when data changes (no retraining)
-3. Every answer shows its sources — fully verifiable
-4. Runs entirely locally except the final LLM call
-
----
-
-## Anti-Hallucination Design
-
-The system prompt explicitly forbids Grok from using outside knowledge:
-
-```
-Answer ONLY using the CONTEXT provided. Never use outside knowledge.
-If the answer is not in the context, say:
-"I don't have that specific information. Please contact the admissions team."
-Never fabricate fees, dates, percentages, company names, or statistics.
-```
-
----
-
-## Evaluation Criteria Coverage
-
-| Criterion | How we address it |
-|---|---|
-| **Answer accuracy** | RAG grounds every answer in retrieved source text |
-| **Relevance** | Semantic FAISS search finds contextually relevant chunks |
-| **Robustness** | Fallback message when answer not in knowledge base |
-| **User experience** | Clean UI, quick chips, category badge, source citations |
-| **Technical implementation** | Full 8-step pipeline with documented architecture |
-
----
-
-## Grok API — 4 Lines That Differ from OpenAI
-
-```python
-# The only difference from using GPT-4o:
-from openai import OpenAI
-
-client = OpenAI(
-    api_key=os.getenv("XAI_API_KEY"),
-    base_url="https://api.x.ai/v1",   # ← only this line changes
-)
-
-response = client.chat.completions.create(
-    model="grok-3-mini",              # ← and the model name
-    messages=[...]
-)
-answer = response.choices[0].message.content
-```
-
----
-
-## Configuration (.env)
-
-```bash
-XAI_API_KEY=xai-xxxxxxxxxxxx   # from https://console.x.ai/
-LLM_MODEL=grok-3-mini          # or grok-3 for max quality
-TOP_K_RESULTS=4                # chunks retrieved per query
-CHUNK_SIZE=400                 # words per chunk
-CHUNK_OVERLAP=60               # overlap to prevent sentence splits
-PROGRAM_NAME=MastersUnion Course Assistant
-```
-
----
-
-## If Scraper Returns THIN Pages
-
-Some pages load content via JavaScript. If you see many `[THIN]` warnings:
-
-```bash
-pip install playwright
-playwright install chromium
-```
-
-Then in `src/scraper.py`, change the last line:
-```python
-scrape_all(use_playwright_fallback=True)   # was False
-```
-
----
-
-*Built for the AI Course Assistant Hackathon · RAG pipeline · Grok (xAI) · MastersUnion*
+*Built for the AI Course Assistant Hackathon · Dual Architecture RAG Pipeline · Masters Union*

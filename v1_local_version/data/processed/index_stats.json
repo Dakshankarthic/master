@@ -1,0 +1,33 @@
+{
+  "total_chunks": 332,
+  "courses": [
+    "Content Creator Challenge Report Brochure",
+    "Masters Union Year Book Brochure",
+    "PGP Applied AI and Agentic Systems",
+    "PGP Bharat",
+    "PGP Capital Markets and Trading",
+    "PGP Entrepreneurship and Business Acceleration",
+    "PGP Human Resources and Organisation Strategy",
+    "PGP Rise General Management",
+    "PGP Rise General Management Global",
+    "PGP Rise Owners and Promoters Management",
+    "PGP Sports Management and Gaming",
+    "PGP Sustainability and Business Management",
+    "PGP Technology and Business Management",
+    "PGP UI/UX and AI Product Design",
+    "Shapingfuturecareers 1 Brochure",
+    "UG Data Science and AI",
+    "UG Psychology and Marketing",
+    "UG Technology and Business Management",
+    "Ug Dropshipping Report Brochure",
+    "Vipbooklet2025 Brochure",
+    "Webgipexpandedreport04.02.26 Compressed Brochure"
+  ],
+  "categories": [
+    "general"
+  ],
+  "chunk_size": 2000,
+  "chunk_overlap": 300,
+  "embed_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "build_time_s": 25.7
+}

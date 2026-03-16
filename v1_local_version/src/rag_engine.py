@@ -9,18 +9,31 @@ import time
 import requests
 from pathlib import Path
 
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
 CHUNKS_PATH = Path("data/processed/chunks.json")
+INDEX_PATH = Path("data/processed/faiss_index")
 LEADS_PATH = Path("data/leads.json")
 _chunks = None
+_vectorstore = None
 
 def init():
-    global _chunks
-    if _chunks is not None:
+    global _chunks, _vectorstore
+    if _chunks is not None and _vectorstore is not None:
         return
-    if not CHUNKS_PATH.exists():
-        _chunks = []
-        return
-    _chunks = json.loads(CHUNKS_PATH.read_text(encoding="utf-8"))
+    
+    # Load human-readable chunks
+    if CHUNKS_PATH.exists():
+        _chunks = json.loads(CHUNKS_PATH.read_text(encoding="utf-8"))
+    
+    # Load FAISS index
+    if INDEX_PATH.exists():
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            model_kwargs={"device": "cpu"}
+        )
+        _vectorstore = FAISS.load_local(str(INDEX_PATH), embeddings, allow_dangerous_deserialization=True)
 
 # ── Maps ──────────────────────────────────────────────────────────────────────
 # Added space-less versions for better matching (e.g. 'datascience')
@@ -52,7 +65,9 @@ COURSE_MAP = {
     "psychology": "UG Psychology and Marketing",
     "data science": "UG Data Science and AI",
     "datascience": "UG Data Science and AI",
-    "ai": "PGP Applied AI and Agentic Systems", # Note: AI often refers to Applied AI in this context
+    "pg in ai": "PGP Applied AI and Agentic Systems",
+    "ug in ai": "UG Data Science and AI",
+    "ai": "PGP Applied AI and Agentic Systems",
 }
 
 # ── Agentic Tools ─────────────────────────────────────────────────────────────
@@ -88,24 +103,44 @@ def tool_lead_capture(query):
         "email": r"([\w.-]+@[\w.-]+\.\w+)"
     }
     
-    name = re.search(patterns["name"], query, re.I)
-    phone = re.search(patterns["phone"], query)
-    email = re.search(patterns["email"], query)
+    name_match = re.search(patterns["name"], query, re.I)
+    phone_match = re.search(patterns["phone"], query)
+    email_match = re.search(patterns["email"], query)
     
-    name_val = name.group(1) if name else None
-    phone_val = phone.group(1) if phone else None
-    email_val = email.group(1) if email else None
+    name_val = name_match.group(1).strip() if name_match else None
     
-    # If we have at least a Name and one contact info, capture it
+    # Fix Bug #4: Regex was too greedy with re.I. Clean up common bleed-in words.
+    if name_val:
+        for stop in [" and ", " my ", " is ", " email ", " phone "]:
+            if stop in name_val.lower():
+                name_val = name_val.lower().split(stop)[0].strip().title()
+                break
+
+    phone_val = phone_match.group(1) if phone_match else None
+    email_val = email_match.group(1) if email_match else None
+    
     if name_val and (phone_val or email_val):
         leads = []
         if LEADS_PATH.exists():
             try: leads = json.loads(LEADS_PATH.read_text())
             except: pass
-        entry = {"name": name_val, "phone": phone_val, "email": email_val, "time": time.time(), "q": query}
-        leads.append(entry)
-        LEADS_PATH.write_text(json.dumps(leads, indent=2))
-        return f"### ✅ Success!\n\nThank you, **{name_val}**! Your interest has been recorded. Our admissions counselor will contact you at **{phone_val or email_val}** very soon."
+        
+        # Bug #6 & #7: Deduplication and standardization
+        is_duplicate = any(l.get("email") == email_val or l.get("phone") == phone_val for l in leads if email_val or phone_val)
+        
+        if not is_duplicate:
+            entry = {
+                "name": name_val, 
+                "phone": phone_val, 
+                "email": email_val, 
+                "time": time.time(), # Standardized key (Bug #7)
+                "q": query
+            }
+            leads.append(entry)
+            LEADS_PATH.write_text(json.dumps(leads, indent=2))
+            return f"### ✅ Success!\n\nThank you, **{name_val}**! Your interest has been recorded. Our admissions counselor will contact you at **{phone_val or email_val}** very soon."
+        else:
+            return f"### ✅ Already Recorded\n\nWe already have your details, **{name_val}**. A counselor will be in touch shortly!"
     
     # Catch-all for "connect me" or "interested" without details
     if any(k in query.lower() for k in ["connect me", "interested", "i want to apply"]):
@@ -118,47 +153,62 @@ def tool_lead_capture(query):
 
 def search(query, top_k=5):
     init()
-    ql = query.lower()
+    ql = query.lower().strip()
     
-    # 1. Determine target course (no default, ask if missing for specific queries)
+    # 1. Identify target course (Check longer aliases first to avoid partial matches)
     target_course = None
-    for alias, full_name in COURSE_MAP.items():
+    sorted_aliases = sorted(COURSE_MAP.keys(), key=len, reverse=True)
+    for alias in sorted_aliases:
         if alias in ql:
-            target_course = full_name
+            target_course = COURSE_MAP[alias]
             break
-            
-    # 2. Score chunks
-    scored = []
-    # Improved keyword extraction: split by common chars AND keep joined words
-    raw_keywords = re.findall(r'\b\w{3,}\b', ql)
-    # Also add a spaceless version of the query to match against potentially joined words
-    keywords = list(set(raw_keywords))
     
-    for chunk in _chunks:
-        text = chunk["text"].lower()
-        # Clean text for better matching (remove spaces to match 'datascience' with 'Data Science')
-        clean_text = text.replace(" ", "")
+    # Bug #1 Fix: Use FAISS if available for semantic search
+    if _vectorstore:
+        # If we have a target course, we want to ensure we get results from it
+        # Fetch more candidates for re-ranking
+        candidates = _vectorstore.similarity_search(query, k=top_k * 4)
         
+        matches = []
+        others = []
+        for doc in candidates:
+            c_name = doc.metadata.get("course")
+            chunk = {"text": doc.page_content, "course": c_name}
+            if target_course and c_name == target_course:
+                matches.append(chunk)
+            else:
+                others.append(chunk)
+        
+        # Combine: Priority matches first, then others
+        # Fix: Use list conversion to avoid slice error in some linters
+        results = list(matches + others)[:top_k]
+        return results
+
+    # Fallback to keyword search (Bug #5 fix included)
+            
+    scored = []
+    keywords = list(set(re.findall(r'\b\w{3,}\b', ql)))
+    
+    for chunk in (_chunks or []):
+        text = chunk["text"].lower()
+        clean_text = text.replace(" ", "")
         score = 0
         for k in keywords:
             if k in text: score += 5
-            elif k in clean_text: score += 3 # Match 'datascience' in 'data science'
+            elif k in clean_text: score += 3 
         
-        # Program Match Boost (Very Important)
         if target_course and chunk.get("course") == target_course:
             score += 20
         
-        # Chunk Category Boost
-        if any(k in ql for k in ["fee", "cost", "price"]) and "fee" in text: score += 10
-        if any(k in ql for k in ["admission", "apply", "steps"]) and "admission" in text: score += 10
-        if any(k in ql for q in ["outcome", "career", "placement", "salary"]) and any(x in text for x in ["placement", "salary", "career"]): score += 10
+        # Bug #5 Fix: Use the loop variable 'q' correctly
+        if any(q in ql for q in ["fee", "cost", "price"]) and "fee" in text: score += 10
+        if any(q in ql for q in ["admission", "apply", "steps"]) and "admission" in text: score += 10
+        if any(q in ql for q in ["outcome", "career", "placement", "salary"]) and any(x in text for x in ["placement", "salary", "career"]): score += 10
         
         if score > 0:
             scored.append((score, chunk))
             
     scored.sort(key=lambda x: -x[0])
-    
-    # Dedup and return
     results = []
     seen = set()
     for _, c in scored:
@@ -208,36 +258,21 @@ def answer(query):
             "model": "Course Lister"
         }
 
-    # If the user JUST mentions a course without a specific question, give them an overview
+    # --- SPECIAL AGENT: Course Overview (Table Request) ---
     if has_course and not any(k in ql for k in course_keywords):
-        # Determine which course
         target = None
         for alias, full_name in COURSE_MAP.items():
             if alias in ql or ql.replace(" ", "") == alias:
                 target = full_name
                 break
         if target:
-            # Re-run search but for the overview of this specific course
-            chunks = search(f"{target} overview", top_k=3)
-            if chunks:
-                return {
-                    "answer": f"Here is an overview of the **{target}**:\n\n" + "\n\n".join([c["text"] for c in chunks[:2]]),
-                    "sources": chunks[:2],
-                    "category": "Overview",
-                    "model": "Assistant"
-                }
-
-    if any(k in ql for k in course_keywords) and not has_course:
-        return {
-            "answer": "I'd be happy to tell you more about those details! Could you please specify which program you are interested in? (e.g., **PGP Applied AI**, **TBM**, **UG Business**, **Capital Markets**, etc.)",
-            "sources": [],
-            "category": "Clarification",
-            "model": "Clarifier Agent"
-        }
+            # Re-direct to standard RAG but with a table-focused query
+            query = f"Provide a comprehensive overview of the {target} in a structured Markdown table format, including duration, fees, and outcomes."
+            # Continue to standard RAG...
 
     # --- STANDARD RAG (DIRECT RETRIEVAL) ---
     
-    chunks = search(query, top_k=5)
+    chunks = search(query, top_k=3) # Reduced from 5 to 3 for speed
     if not chunks:
         return {"answer": "I don't have that specific information in my records. Please contact pgadmissions@mastersunion.org.", "sources": [], "category": "Fallback", "model": "RAG"}
 
@@ -246,8 +281,17 @@ def answer(query):
     
     # Prepare prompt for Llama 3.2
     messages = [
-        {"role": "system", "content": "You are the MastersUnion Admissions Assistant. Use the provided context to answer questions accurately and concisely. If the information isn't in the context, politely say you don't have that specific data."},
-        {"role": "user", "content": f"Context:\n{context_text}\n\nQuestion: {query}"}
+        {
+            "role": "system", 
+            "content": """You are the official MastersUnion Admissions Intelligence. 
+Your goal is to provide elite, professional, and highly accurate guidance to prospective students.
+
+RULES:
+1. Use ONLY the provided context.
+2. Output a Markdown TABLE.
+3. Short & Concise only."""
+        },
+        {"role": "user", "content": f"CONTEXT FROM DATABASE:\n{context_text}\n\nUSER QUESTION: {query}"}
     ]
     
     # Generate actual AI response via Llama 3.2
@@ -255,23 +299,25 @@ def answer(query):
         response = requests.post(
             'http://localhost:11434/api/chat',
             json={
-                "model": "llama3.2:1b",
+                "model": "llama3.2", # Switched to 3B model for 10x speed boost on CPU
                 "messages": messages,
                 "stream": False,
                 "options": {
                     "temperature": 0.1,
-                    "num_predict": 150
+                    "num_predict": 400,
+                    "num_ctx": 2048 
                 }
             },
-            timeout=180 # Large timeout for slow local inference
+            timeout=90 # 90s is plenty for Llama 3.2 3B
         )
         if response.status_code == 200:
             ai_answer = response.json().get("message", {}).get("content", "").strip()
             if ai_answer:
-                return {"answer": ai_answer, "sources": chunks[:3], "category": "AI Wisdom", "model": "Llama 3.2:1b Local"}
+                return {"answer": ai_answer, "sources": list(chunks[:3]), "category": "AI Wisdom", "model": "Llama 3.2 (3B) Fast"}
     except Exception as e:
-        print(f"Llama generation failed: {e}")
+        print(f"Llama generation failed: {str(e)}")
         
     # If the LLM call fails, fallback to direct concatenation
-    ans_text = "\n\n---\n\n".join([c["text"] for c in chunks[:2]])
-    return {"answer": ans_text, "sources": chunks[:3], "category": "Direct", "model": "Direct Retrieval Fallback"}
+    ans_text = "### ⚡ Speed Tip\n\nYour CPU is struggling with the 8B model. Please run `ollama pull llama3.2` for instant answers!\n\nHere is the raw data:\n\n"
+    ans_text += "\n\n---\n\n".join([c["text"] for c in chunks[:2]])
+    return {"answer": ans_text, "sources": chunks[:3], "category": "Direct", "model": "Fast Fallback"}

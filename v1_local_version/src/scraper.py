@@ -394,4 +394,5 @@ if __name__ == "__main__":
     print("=" * 55)
 
     # Set use_playwright_fallback=True if many pages come back THIN
-    scrape_all(use_playwright_fallback=False)
+    # Note: Requires 'pip install playwright && playwright install chromium'
+    scrape_all(use_playwright_fallback=True)
