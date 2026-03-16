@@ -10,6 +10,8 @@ This approach runs the model locally using a *local LLM, prioritizing **privacy,
 
 # Masters' Union AI Chatbot — Hackathon Submission
 
+### 📺 [Project Demo Video](https://youtu.be/_ZzMpfsrLRo)
+
 This repository contains two distinct implementation strategies for the Masters' Union AI Admissions Assistant. Both use **Retrieval-Augmented Generation (RAG)** to provide accurate, grounded answers about 28+ programmes.
 
 ---
