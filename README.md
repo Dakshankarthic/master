@@ -9,8 +9,12 @@ This approach leverages cloud infrastructure to enable *faster deployment, **hig
 This approach runs the model locally using a *local LLM, prioritizing **privacy, data security, and offline accessibility*. It ensures that sensitive user data remains on the user's device without relying on external servers.
 
 # Masters' Union AI Chatbot — Hackathon Submission
+---
 
-### 📺 [Project Demo Video](https://youtu.be/_ZzMpfsrLRo)
+# 📺 [WATCH THE PROJECT DEMO VIDEO](https://youtu.be/_ZzMpfsrLRo)
+[![Watch the Demo](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/_ZzMpfsrLRo)
+
+---
 
 This repository contains two distinct implementation strategies for the Masters' Union AI Admissions Assistant. Both use **Retrieval-Augmented Generation (RAG)** to provide accurate, grounded answers about 28+ programmes.
 

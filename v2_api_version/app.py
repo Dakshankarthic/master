@@ -12,6 +12,10 @@ NOTE: The original Streamlit interface is preserved in streamlit_app.py
 import os
 import re
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Fix Windows stdout encoding so emoji in log messages don't crash the server
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
