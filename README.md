@@ -1,3 +1,13 @@
+## AI Course Instructor Model
+
+The AI Course Instructor model is designed using two different architectural approaches, each optimized for specific requirements.
+
+### Approach 1: Cloud-Based Model
+This approach leverages cloud infrastructure to enable *faster deployment, **higher scalability, and **enhanced model capabilities*. It allows seamless updates, improved performance, and the ability to integrate advanced AI services.
+
+### Approach 2: Local LLM-Based Model
+This approach runs the model locally using a *local LLM, prioritizing **privacy, data security, and offline accessibility*. It ensures that sensitive user data remains on the user's device without relying on external servers.
+
 # Masters' Union AI Chatbot — Hackathon Submission
 
 This repository contains two distinct implementation strategies for the Masters' Union AI Admissions Assistant. Both use **Retrieval-Augmented Generation (RAG)** to provide accurate, grounded answers about 28+ programmes.
