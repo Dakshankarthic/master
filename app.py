@@ -11,9 +11,9 @@ import threading
 
 # Initialize Engine in background to prevent slow startup
 def background_init():
-    print("⏳ AI Engine warming up...")
+    print("AI Engine warming up...")
     init()
-    print("✅ AI Engine ready!")
+    print("AI Engine ready!")
 
 threading.Thread(target=background_init, daemon=True).start()
 
@@ -50,5 +50,5 @@ def ask():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    print(f"🚀 Full Stack API Server starting on http://localhost:{port}")
+    print(f"Full Stack API Server starting on http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)

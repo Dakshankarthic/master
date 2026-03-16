@@ -5,7 +5,7 @@ from rag_engine import answer, init, COURSE_MAP, search
 
 init()
 
-query = "courses"
+query = "who are the faculty mentors for applied ai"
 
 print(f"Query: {query}")
 result = answer(query)

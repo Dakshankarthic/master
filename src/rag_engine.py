@@ -6,7 +6,7 @@ import os
 import json
 import re
 import time
-from pathlib import Path
+import requests
 from pathlib import Path
 
 CHUNKS_PATH = Path("data/processed/chunks.json")
@@ -196,9 +196,9 @@ def answer(query):
 
     # Course Clarifier (User Request: Ask for program if not specified)
     has_course = any(alias in ql or ql.replace(" ", "") == alias for alias in COURSE_MAP.keys())
-    course_keywords = ["outcome", "placement", "salary", "career", "fee", "cost", "curriculum", "syllabus", "duration", "eligibility", "process", "admission", "requirement", "criteria"]
+    course_keywords = ["outcome", "placement", "salary", "career", "fee", "cost", "curriculum", "syllabus", "duration", "eligibility", "process", "admission", "requirement", "criteria", "faculty", "mentor", "professor", "teacher"]
     
-    course_inquiry_keywords = ["courses", "programs", "degrees", "what do you offer", "list of courses", "available courses"]
+    course_inquiry_keywords = ["course", "courses", "programs", "degrees", "what do you offer", "list of courses", "available courses"]
     if any(k in ql for k in course_inquiry_keywords) and not has_course:
         course_list = "\n".join([f"- **{v}**" for v in list(dict.fromkeys(COURSE_MAP.values()))]) # Deduplicate
         return {
@@ -241,6 +241,37 @@ def answer(query):
     if not chunks:
         return {"answer": "I don't have that specific information in my records. Please contact pgadmissions@mastersunion.org.", "sources": [], "category": "Fallback", "model": "RAG"}
 
-    # High-quality text concatenation directly from our embedded chunks
+    # Build context from chunks
+    context_text = "\n\n---\n\n".join([c["text"] for c in chunks[:3]])
+    
+    # Prepare prompt for Llama 3.2
+    messages = [
+        {"role": "system", "content": "You are the MastersUnion Admissions Assistant. Use the provided context to answer questions accurately and concisely. If the information isn't in the context, politely say you don't have that specific data."},
+        {"role": "user", "content": f"Context:\n{context_text}\n\nQuestion: {query}"}
+    ]
+    
+    # Generate actual AI response via Llama 3.2
+    try:
+        response = requests.post(
+            'http://localhost:11434/api/chat',
+            json={
+                "model": "llama3.2:1b",
+                "messages": messages,
+                "stream": False,
+                "options": {
+                    "temperature": 0.1,
+                    "num_predict": 150
+                }
+            },
+            timeout=180 # Large timeout for slow local inference
+        )
+        if response.status_code == 200:
+            ai_answer = response.json().get("message", {}).get("content", "").strip()
+            if ai_answer:
+                return {"answer": ai_answer, "sources": chunks[:3], "category": "AI Wisdom", "model": "Llama 3.2:1b Local"}
+    except Exception as e:
+        print(f"Llama generation failed: {e}")
+        
+    # If the LLM call fails, fallback to direct concatenation
     ans_text = "\n\n---\n\n".join([c["text"] for c in chunks[:2]])
-    return {"answer": ans_text, "sources": chunks[:3], "category": "Direct", "model": "Direct Retrieval"}
+    return {"answer": ans_text, "sources": chunks[:3], "category": "Direct", "model": "Direct Retrieval Fallback"}
