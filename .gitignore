@@ -1,0 +1,12 @@
+# Secret — never commit
+.env
+
+# Auto-generated — rebuild from source
+data/processed/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.egg-info/
+.venv/
+venv/

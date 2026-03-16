@@ -1,0 +1,75 @@
+QUERY: hi im want to do pg in ai and what is the program duration? how many months ? is it online or offline ?
+
+--- ANSWER ---
+# PGP APPLIED AI AND AGENTIC SYSTEMS - OFFICIAL PROGRAM DETAILS
+
+- Campus Location: Gurugram, India (DLF Cyberpark).
+- Total Program Fee: ₹22,65,000.
+- Program Duration: 15 months (divided into 6 terms).
+- Next Batch Starts: August 2026.
+- Program Modes: 
+  - Offline (On-Campus) for freshers or early career engineers.
+  - Online Weekend Programme for working professionals to apply AI at their current job.
+
+### ADMISSION PROCESS (4 STEPS)
+1. Application Submission: Online academic records and professional experience.
+2. Scholastic Technical Test: MU-BAAT or Scholastic Technical Test (GMAT/GRE/CAT also accepted).
+3. Technical Interview: Interviewed by faculty and industry experts/mentors.
+4. Admission Decision: Final decision via offer letter.
+
+### FINANCES & INSTALLMENTS
+- Total Program Fee: ₹22,65,000 (Inclusive of all tuition).
+- Admission Offer Acceptance Fee: ₹75,000 (Non-refundable).
+- Mid-Programme Installment: ₹10,95,000 (Due 3 months after program start).
+- Scholarship: Merit-based and profile-based scholarships of up to 100% are available.
+- EMI Option: Available via partner banks (HDFC, Bajaj Finserv). 12-month EMI is exactly ₹188,750 per month.
+
+### CAREER OUTCOMES
+- Domestic Placement Average: ₹30.72 LPA.
+- Overall Average Package: ₹33.39 LPA.
+- Highest International Package: ₹1.28 Cr.
+- Highest Domestic Package: ₹33.39 LPA.
+- Top Recruiters: Google, Meta, Apple, Microsoft, Amazon.
+- Student Startups: Alumni have founded startups like MEMOTAG, VKYD Labs, TheGoodBrowser, and GuarderX. Some were featured on Shark Tank India.
+
+### CURRICULUM HIGHLIGHTS
+- Term 1: Python for AI, Linear Algebra, Probability.
+- Term 2: Machine Learning Deep Dive, Supervised/Unsupervised Learning.
+- Term 3: LLMs and Transformers, Prompt Engineering.
+- Term 4: Retrieval-Augmented Generation (RAG), Neural Networks, and Data Engineering.
+- Term 5: Agentic Workflows, LangGraph, AutoGen.
+- Term 6: Capstone Project & Deployment.
+
+---
+
+### FACULTY & MENTORS
+- Divij Bajaj: Data and Applied Scientist at Microsoft (Lead Faculty/Mentor).
+- Faculty Qualifications: 100% of lead faculty hold a PhD doctorate from globally renowned universities.
+
+### ELIGIBILITY CRITERIA
+- Offline Program: Best for BCA, B.Tech, or Computer Science related degree holders; freshers or early career professionals.
+- Online Weekend Program: Designed for working professionals with any degree background seeking to integrate AI.
+
+### CONTACT INFORMATION
+- Admissions Inquiry: +91 8929361765.
+- Email: pgadmissions@mastersunion.org.
+
+### MISCELLANEOUS FAQ
+- Hostel WiFi Speed: "I don't have that detail. Please contact pgadmissions@mastersunion.org."
+- Marketing/HR Modules: "There are no marketing or HR modules in the Applied AI context; this program is 100% technical."
+- Application Form Fee: "I don't have the initial form fee detail. The Admission Offer Acceptance fee is ₹75,000."
+- Pets on Campus: "I don't have information on pets. Please contact the campus management."
+
+--- SOURCES (Top 1) ---
+# PGP APPLIED AI AND AGENTIC SYSTEMS - OFFICIAL PROGRAM DETAILS
+
+- Campus Location: Gurugram, India (DLF Cyberpark).
+- Total Program Fee: ₹22,65,000.
+- Program Duration: 15 months (divided into 6 terms).
+- Next Batch Starts: August 2026.
+- Program Modes: 
+  - Offline (On-Campus) for freshers or early career engineers.
+  - Online Weekend Programme for working professionals to apply AI at their current job.
+
+### ADMISSION PROCESS (4 STEPS)
+1. Application Submission: Online academic records and pro
